@@ -46,7 +46,17 @@
                     {
                         data: "id",
                         render: function (data) {
-                            return "<button class='btn-link js-delete' data-rented-id=" + data + ">Return Movie</button>";
+                            //var indexes = table.rows().eq(0).filter(function (rowIdx) {
+                            //    return table.cell(rowIdx, 3).data() === null ? true : false;
+                            //});
+                            //console.log(indexes);
+                            var objData = table.data();
+                            if (!table.data().hasOwnProperty('dateReturnedFormatted')) {
+                                return "<button class='btn-link js-delete' data-rented-id=" + data + ">Return Movie</button>";
+                            }
+                            else {
+                                return "<p>Movie Returned</p>";
+                            }
                         }
                     },
                 ]
@@ -57,9 +67,9 @@
                     if (result) {
                         $.ajax({
                             url: "/api/newRentals/" + button.attr("data-rented-id"),
-                            method: "DELETE",
+                            method: "PUT",
                             success: function () {
-                                console.log("success");
+                                table.ajax.reload();
                             }
                         });
                     }

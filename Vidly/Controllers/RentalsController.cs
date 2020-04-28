@@ -27,5 +27,22 @@ namespace Vidly.Controllers
         {
             return View();
         }
+
+        //public ActionResult Edit(int id)
+        //{
+        //    var rental = _context.Rentals.SingleOrDefault(r => r.Id == id);
+
+        //    if (rental == null)
+        //        return HttpNotFound();
+
+        //    var viewModel = new RentalFormViewModel
+        //    {
+        //        Rental = rental,
+        //        Movie = _context.Movies.ToList(),
+        //        Customer = _context.Customers.ToList()
+        //    };
+
+        //    return View("Index");
+        //}
     }
 }

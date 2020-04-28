@@ -64,26 +64,36 @@ namespace Vidly.Controllers.Api
 
             return Ok();
         }
-        [HttpPost]
-        public IHttpActionResult DeleteRental(int id, RentalDto newRental)
+        [HttpPut]
+        public IHttpActionResult ReturnRental(int id)
         {
-            var rentedMovie = _context.Movies.SingleOrDefault(m => m.Id == id);
+            var rentals = _context.Rentals
+                .Include(r => r.Movie)
+                .Include(r => r.Customer)
+                .Where(r => r.Id == id);
 
-            rentedMovie.NumberAvailable++;
+            var movies = rentals.Select(m => m.Movie).ToList();
 
-            var customer = _context.Customers.Single(
-                c => c.Id == newRental.CustomerId);
+            if (rentals == null)
+                return NotFound();
 
-            if (customer.Id == newRental.CustomerId)
+            foreach (var movie in movies)
             {
-                var rental = new Rental
-                {
-                    DateReturned = DateTime.Now
-                };
-                _context.Rentals.Add(rental);
-            }
-            _context.SaveChanges();
+                if (movie.NumberAvailable >= movie.NumberInStock)
+                        return BadRequest("Movie has already been returned");
 
+                    var movieInDb = _context.Movies.Single(m => m.Id == movie.Id);
+
+                movieInDb.NumberAvailable++;
+            }
+
+            foreach (var rental in rentals)
+            {
+                var rentalInDb = _context.Rentals.Single(r => r.Id == rental.Id);
+                rentalInDb.DateReturned = DateTime.Now;
+            }
+
+            _context.SaveChanges();
             return Ok();
         }
     }
