@@ -1,0 +1,81 @@
+﻿@model IEnumerable<Vidly.Models.Rental>
+
+@{
+    ViewBag.Title = "Rentals";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h2>Rentals </h2>
+<p>
+    @Html.ActionLink("New Rental", "New", "Rentals", null, new { @class = "btn btn-primary" })
+</p>
+<table id="rentals" class="table table-bordered table-hover">
+    <thead>
+        <tr>
+            <th>Customer Name</th>
+            <th>Movies Rented</th>
+            <th>Date Rented</th>
+            <th>Date Returned</th>
+            <th>Return Movie</th>
+
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            var table = $("#rentals").DataTable({
+                ajax: {
+                    url: "/api/newRentals",
+                    dataSrc: ""
+                },
+                columns: [
+                    {
+                        data: "customer.name"
+                    },
+                    {
+                        data: "movie.name"
+                    },
+                    {
+                        data: "dateRentedFormatted"
+                    },
+                    {
+                        data: "dateReturnedFormatted"
+                    },
+                    {
+                        data: "id",
+                        render: function (data) {
+                            //var indexes = table.rows().eq(0).filter(function (rowIdx) {
+                            //    return table.cell(rowIdx, 3).data() === null ? true : false;
+                            //});
+                            //console.log(indexes);
+                            var objData = table.data();
+                            if (!table.data().hasOwnProperty('dateReturnedFormatted')) {
+                                return "<button class='btn-link js-delete' data-rented-id=" + data + ">Return Movie</button>";
+                            }
+                            else {
+                                return "<p>Movie Returned</p>";
+                            }
+                        }
+                    },
+                ]
+            });
+            $("#rentals").on("click", ".js-delete", function () {
+                var button = $(this);
+                bootbox.confirm("Are you sure you want to return this movie?", function (result) {
+                    if (result) {
+                        $.ajax({
+                            url: "/api/newRentals/" + button.attr("data-rented-id"),
+                            method: "PUT",
+                            success: function () {
+                                table.ajax.reload();
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
+    </script>
+}

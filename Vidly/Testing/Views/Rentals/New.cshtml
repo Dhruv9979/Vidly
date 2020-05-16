@@ -1,0 +1,128 @@
+﻿@model dynamic
+@{
+    ViewBag.Title = "New Rental Form";
+    //We don't need to set the layout here as it is set by Default in:
+    /*Views/_ViewStart.cshtml
+     */
+}
+
+<h2>New</h2>
+@*We will not use @Html.BeginForm as it will create a traditional form(Check notes) there we will use simple HTML.*@
+
+<form id="newRental">
+    <div class="form-group">
+        <label>Customer</label>
+        <div class="tt-container">
+            <input id="customer" name="customer" data-rule-validCustomer="true" required type="text" value="" class="form-control" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Movie</label>
+        <div class="tt-container">
+            <input id="movie" name="movie" data-rule-atLeastOneMovie="true" type="text" value="" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 col-sm-4">
+            <ul id="movies" class="list-group"></ul>
+        </div>
+    </div>
+
+    <button class="btn btn-primary">Submit</button>
+</form>
+
+@section scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+            var viewModel = {
+                movieIds: []
+            };
+            var customers = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                remote: {
+                    url: '/api/customers?query=%QUERY',
+                    wildcard: '%QUERY'
+                }
+            });
+            $('#customer').typeahead({
+                minLength: 3,
+                highlight: true
+            }, {
+                name: 'customers',
+                display: 'name',
+                source: customers
+            }).on("typeahead:select", function (e, customer) {
+                viewModel.customerId = customer.id;
+            });
+            var movies = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                remote: {
+                    url: '/api/movies?query=%QUERY',
+                    wildcard: '%QUERY'
+                }
+            });
+
+            $('#movie').typeahead({
+                minLength: 3,
+                highlight: true
+            }, {
+                name: 'movies',
+                display: 'name',
+                source: movies
+            }).on("typeahead:select", function (e, movie) {
+                $("#movies").append("<li class='list-group-item'>"+ movie.name + 
+                    "<span class='close' id='close' name='close'>&times;</span> </li>");
+
+                $("#movie").typeahead("val", "");
+                viewModel.movieIds.push(movie.id);
+            });
+
+            $("#movies").on("click", ".close", function () {
+                $(this).parent().remove();
+            });
+
+            $.validator.addMethod("validCustomer", function () {
+                return viewModel.customerId && viewModel.customerId !== 0;
+            }, "Please select a valid customer.");
+
+            //prevent add the movie more than one time
+            //$.validator.addMethod("validCustomer", function () {
+            //    return $('#movies li:contains("' + $('#movie').val() + '")').length == 0
+            //}, "duplicated movies on one rent!")
+            
+            $.validator.addMethod("atLeastOneMovie", function () {
+                return viewModel.movieIds.length > 0;
+            }, "Please select at least one movie.");
+            
+
+            var validator = $("#newRental").validate({
+                submitHandler: function () {
+                    $.ajax({
+                        url: "/api/newRentals",
+                        method: "post",
+                        data: viewModel
+                    })
+                        .done(function () {
+                            toastr.success("Rentals successfully recorded.");
+                            $("#customer").typeahead("val", "");
+                            $("#movie").typeahead("val", "");
+                            $("#movies").empty();
+                            viewModel = { movieIds: [] };
+                            validator.resetForm();
+                        })
+                        .fail(function () {
+                            toastr.error("Something unexpected happened.");
+                        });
+                    return false;//This is e.preventDefault which is used to prevent creation of tradional
+                    // html form. Check the notes.
+                }
+            });
+        });
+    </script>
+}
